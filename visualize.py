@@ -32,7 +32,7 @@ def plot_stats(statistics, ylog=False, view=False, filename='avg_fitness.svg'):
     if ylog:
         plt.gca().set_yscale('symlog')
 
-    #plt.savefig(filename)
+    plt.savefig(filename)
     if view:
         plt.show()
 
@@ -77,8 +77,8 @@ def plot_spikes(spikes, view=False, filename=None, title=None):
     plt.grid()
     plt.plot(t_values, I_values, "r-o")
 
-    #if filename is not None:
-        #plt.savefig(filename)
+    if filename is not None:
+        plt.savefig(filename)
 
     if view:
         plt.show()
@@ -105,7 +105,7 @@ def plot_species(statistics, view=False, filename='speciation.svg'):
     plt.ylabel("Size per Species")
     plt.xlabel("Generations")
 
-    #plt.savefig(filename)
+    plt.savefig(filename)
 
     if view:
         plt.show()

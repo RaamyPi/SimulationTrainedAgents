@@ -14,11 +14,11 @@ Input Layer: 64 Nodes
     16 - Widths
     16 - Heights
 
-Hidden Layer: 4 Nodes
-    1 - Distance
-    1 - Theta
-    1 - Width
-    1 - Height
+Hidden Layer: 16 Nodes
+    4 - Distance
+    4 - Theta
+    4 - Width
+    4 - Height
 
 Output Layer: 4 Nodes
     1 - (N) Up
@@ -41,7 +41,7 @@ pygame.init()
 
 # NEAT CONSTANTS
 
-NUMBER_OF_GENERATIONS = 3
+NUMBER_OF_GENERATIONS = 2
 
 # DISPLAY_CONSTANTS
 
