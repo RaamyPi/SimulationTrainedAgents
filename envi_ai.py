@@ -41,7 +41,7 @@ pygame.init()
 
 # NEAT CONSTANTS
 
-NUMBER_OF_GENERATIONS = 2
+NUMBER_OF_GENERATIONS = 1000
 
 # DISPLAY_CONSTANTS
 
@@ -62,13 +62,14 @@ DEFAULT = math.hypot(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 CLOCK = pygame.time.Clock()
 FPS = 60
-ROCKS = 25
 
 # OBJECTS_CONSTANTS
 
 ROVER_WIDTH = 10
 ROVER_HEIGHT = 10
 OFFSET = 10
+DIRECTIONS = 16
+ROCKS = 50
 
 class Rover(object):
 
@@ -81,12 +82,16 @@ class Rover(object):
         self.prev_x = x
         self.prev_y = y
         self.nTicks = 0
+        self.isJittering = False
+        self.nJitter = 0
 
-        self.POINTS = [[DEFAULT, DEFAULT] for _ in range(16)]
-        self.COLORS = [WHITE for _ in range(16)]
-        self.DISTANCES = [DEFAULT for _ in range(16)]
-        self.DIMENSIONS = [[0, 0] for _ in range(16)]
-        self.THETAS = [-1 for _ in range(16)]
+        self.BOUNDARIES = [DEFAULT for _ in range(4)]
+        self.POINTS = [[DEFAULT, DEFAULT] for _ in range(DIRECTIONS)]
+        self.COLORS = [WHITE for _ in range(DIRECTIONS)]
+        self.DISTANCES = [DEFAULT for _ in range(DIRECTIONS)]
+        self.ROCKS = [None for _ in range(DIRECTIONS)]
+        self.ROCK_DIMENSIONS = [[0, 0] for _ in range(DIRECTIONS)]
+        self.THETAS = [-1 for _ in range(DIRECTIONS)]
 
     def drawRover(self):
 
@@ -108,14 +113,17 @@ class Rock(object):
         self.y = y
         self.width = width
         self.height = height
+        self.fillColor = RED
+        self.outlineColor = BLACK
 
     def drawRock(self):
 
+        border = 0.5
         rect = pygame.Rect(self.x, self.y, self.width, self.height)
-        pygame.draw.rect(WINDOW, RED, rect)
+        WINDOW.fill(self.outlineColor, rect)
+        WINDOW.fill(self.fillColor, rect.inflate(-border*2, -border*2))
 
     def getRect(self):
-
         rect = pygame.Rect(self.x, self.y, self.width, self.height)
         return rect
 
@@ -143,19 +151,20 @@ def drawWindow(rovers, rocks):
 
     WINDOW.fill(BLACK)
 
-    # DRAWING ROCKS
-
     for rock in rocks:
         rock.drawRock()
 
     for i, rover in enumerate(rovers):
 
+        rover.prev_x = rover.x
+        rover.prev_y = rover.y
+
         rover.drawRover()
 
         # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE POINTS ON THE CIRCLE TO WHICH WE HAVE TO DRAW THE LINE TO
 
-        for x in range(16):
-            deg = x * (360/16)
+        for x in range(DIRECTIONS):
+            deg = x * (360/DIRECTIONS)
             rad = math.radians(deg)
             cos = math.cos(rad) * 100
             sin = math.sin(rad) * 100
@@ -186,17 +195,32 @@ def drawWindow(rovers, rocks):
 
                     if temp_distance < rover.DISTANCES[x]:
 
-                        temp_theta = math.asin((rover.y-rock.y)/temp_distance) if temp_distance != 0 else -1
-
-                        rover.DIMENSIONS[x][0] = rock.width
-                        rover.DIMENSIONS[x][1] = rock.height
+                        rover.ROCKS[x] = rock
+                        rover.ROCK_DIMENSIONS[x][0] = rock.width
+                        rover.ROCK_DIMENSIONS[x][1] = rock.height
+                        rover.THETAS[x] = math.asin((rover.y-rock.y)/temp_distance) if temp_distance != 0 else -1
                         rover.DISTANCES[x] = temp_distance
-                        rover.THETAS[x] = temp_theta
 
-        # DRAWING POINTS
+        rover.BOUNDARIES[0] = abs(rover.x - SCREEN_WIDTH)
+        rover.BOUNDARIES[1] = rover.x
+        rover.BOUNDARIES[2] = abs(rover.y - SCREEN_HEIGHT)
+        rover.BOUNDARIES[3] = rover.y
 
         for x, point in enumerate(rover.POINTS):
             pygame.draw.line(WINDOW, rover.COLORS[x], (rover.x, rover.y), (point[0], point[1]))
+
+    # ADDRESSING JITTERING
+
+    for i, rover in enumerate(rovers):
+
+        x_displacement = abs(rover.prev_x - rover.x)
+        y_displacement = abs(rover.prev_y - rover.y)
+
+        if (x_displacement <= (2*rover.vel)) and (y_displacement <= (2*rover.vel)) and (rover.nTicks%(3*FPS) == 0):
+            rover.nJitter += 1
+
+        if rover.nJitter > 1:
+            rover.isJittering = True
 
     # MOST IMPORTANT PART
 
@@ -245,55 +269,77 @@ def gameLoop(genomes, config):
 
         CLOCK.tick(FPS)
 
+        # NEURAL NETWORK IN ACTION
+
         for i, rover in enumerate(rovers):
 
-            rock_widths = [dimension[0] for dimension in rover.DIMENSIONS]
-            rock_heights = [dimension[1] for dimension in rover.DIMENSIONS]
+            rock_widths = [dimension[0] for dimension in rover.ROCK_DIMENSIONS]
+            rock_heights = [dimension[1] for dimension in rover.ROCK_DIMENSIONS]
 
-            output = nets[i].activate((*rover.DISTANCES, *rover.THETAS, *rock_widths, *rock_heights))
+            output = nets[i].activate((*rover.BOUNDARIES, *rover.DISTANCES, *rover.THETAS, *rock_widths, *rock_heights))
             action = output.index(max(output))
 
             if action == 0 and (rover.y - rover.vel >= 0):
                 rover.nTicks += 1
                 rover.y -= rover.vel
 
-            if action == 1 and (rover.y + rover.vel <= SCREEN_HEIGHT - ROVER_HEIGHT):
+            elif action == 1 and (rover.y + rover.vel <= SCREEN_HEIGHT - ROVER_HEIGHT):
                 rover.nTicks += 1
                 rover.y += rover.vel
 
-            if action == 2 and (rover.x - rover.vel >= 0):
+            elif action == 2 and (rover.x - rover.vel >= 0):
                 rover.nTicks += 1
                 rover.x -= rover.vel
 
-            if action == 3 and (rover.x + rover.vel <= SCREEN_WIDTH - ROVER_WIDTH):
+            elif action == 3 and (rover.x + rover.vel <= SCREEN_WIDTH - ROVER_WIDTH):
                 rover.nTicks += 1
                 rover.x += rover.vel
 
+        # COLLISION DETECTION
+
         for i, rover in enumerate(rovers):
+
+            if rover.isJittering:
+                ge[i].fitness -= 300
+                rover.isDead = True
+                continue
 
             collides = False
 
-            for rock in rocks:
+            if rover.x <= (ROVER_WIDTH//2)+OFFSET:
+                collides = True
 
-                if rover.getRect().colliderect(rock.getRect()):
-                    collides = True
+            elif rover.x+(ROVER_WIDTH//2) >= SCREEN_WIDTH-OFFSET:
+                collides = True
 
-                elif rover.x <= (ROVER_WIDTH//2)+OFFSET:
-                    collides = True
+            elif rover.y <= (ROVER_HEIGHT//2)+OFFSET:
+                collides = True
 
-                elif rover.x+(ROVER_WIDTH//2) >= SCREEN_WIDTH-OFFSET:
-                    collides = True
+            elif rover.y+(ROVER_HEIGHT//2) >= SCREEN_HEIGHT-OFFSET:
+                collides = True
 
-                elif rover.y <= (ROVER_HEIGHT//2)+OFFSET:
-                    collides = True
-
-                elif rover.y+(ROVER_HEIGHT//2) >= SCREEN_HEIGHT-OFFSET:
-                    collides = True
+            for rock in rover.ROCKS:
 
                 if collides:
-                    ge[i].fitness -= 0.6
+                    ge[i].fitness -= 1.4
                     rover.isDead = True
                     break
+
+                if rock is not None:
+
+                    if rover.getRect().colliderect(rock.getRect()):
+                        collides = True
+
+                    if collides:
+                        ge[i].fitness -= 0.7
+                        rover.isDead = True
+
+                    else:
+                        ge[i].fitness += 1.8
+
+            rover.ROCKS = [None for _ in range(DIRECTIONS)]
+
+        # REMOVING DEAD ROVERS AND THEIR LEFTOVERS
 
         for i, rover in enumerate(rovers):
 
@@ -301,10 +347,9 @@ def gameLoop(genomes, config):
                 rovers.pop(i)
                 nets.pop(i)
                 ge.pop(i)
+
             else:
-                ge[i].fitness += 0.9 * ((abs(rover.prev_x - rover.x)+abs(rover.prev_y - rover.y))/10)
-                rover.prev_x = rover.x
-                rover.prev_y = rover.y
+                ge[i].fitness += (rover.nTicks/1000)
 
     return
 
