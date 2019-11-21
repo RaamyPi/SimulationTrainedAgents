@@ -43,7 +43,7 @@ pygame.init()
 
 # NEAT CONSTANTS
 
-NUMBER_OF_GENERATIONS = 1000
+NUMBER_OF_GENERATIONS = 10
 
 # DISPLAY_CONSTANTS
 
@@ -70,7 +70,7 @@ FPS = 60
 ROVER_WIDTH = 10
 ROVER_HEIGHT = 10
 OFFSET = 10
-DIRECTIONS = 16
+DIRECTIONS = 64
 ROCKS = 50
 
 class Rover(object):
@@ -86,6 +86,7 @@ class Rover(object):
         self.nTicks = 0
         self.color = WHITE
 
+        self.ACTIONS = [-1 for _ in range(10)]
         self.BOUNDARIES = [DEFAULT for _ in range(4)]
         self.POINTS = [[DEFAULT, DEFAULT] for _ in range(DIRECTIONS)]
         self.COLORS = [WHITE for _ in range(DIRECTIONS)]
@@ -170,8 +171,8 @@ def drawWindow(rovers, rocks):
         for x in range(DIRECTIONS):
             deg = x * (360/DIRECTIONS)
             rad = math.radians(deg)
-            cos = math.cos(rad) * 100
-            sin = math.sin(rad) * 100
+            cos = math.cos(rad) * 150
+            sin = math.sin(rad) * 150
             endX = rover.x + cos
             endY = rover.y - sin
             rover.POINTS[x][0] = endX
@@ -267,11 +268,15 @@ def gameLoop(genomes, config):
             rock_widths = [dimension[0] for dimension in rover.ROCK_DIMENSIONS]
             rock_heights = [dimension[1] for dimension in rover.ROCK_DIMENSIONS]
 
-            output = nets[i].activate((*rover.BOUNDARIES, *rover.DISTANCES, *rover.THETAS, *rock_widths, *rock_heights))
+            output = nets[i].activate((rover.x, rover.y, *rover.BOUNDARIES, *rover.DISTANCES, *rover.THETAS, *rock_widths, *rock_heights))
             action = output.index(max(output))
+
+            
 
             rover.prev_x = rover.x
             rover.prev_y = rover.y
+
+            print(f'Rover {i:02d}: {action}')
 
             if action == 0 and (rover.y - rover.vel >= 0):
                 rover.nTicks += 1
@@ -293,10 +298,10 @@ def gameLoop(genomes, config):
 
         for i, rover in enumerate(rovers):
 
-            if rover.getRect().colliderect(rover.getPrevRect()) and rover.nTicks%(3*FPS) == 0:
-                ge[i].fitness -= 500
-                rover.isDead = True
-                continue
+            # if rover.getRect().colliderect(rover.getPrevRect()) and rover.nTicks%(135) == 0:
+            #     ge[i].fitness -= 500
+            #     rover.isDead = True
+            #     continue
 
             collides = False
 
@@ -312,19 +317,16 @@ def gameLoop(genomes, config):
             elif rover.y+(ROVER_HEIGHT//2) >= SCREEN_HEIGHT-OFFSET:
                 collides = True
 
-            for rock in rover.ROCKS:
+            if collides:
+                ge[i].fitness -= 500
+                rover.isDead = True
+                continue
 
-                if collides:
-                    ge[i].fitness -= 50
-                    rover.isDead = True
-                    break
+            for rock in rover.ROCKS:
 
                 if rock is not None:
 
                     if rover.getRect().colliderect(rock.getRect()):
-                        collides = True
-
-                    if collides:
                         ge[i].fitness -= 0.7
                         rover.isDead = True
 
@@ -343,7 +345,7 @@ def gameLoop(genomes, config):
                 ge.pop(i)
 
             else:
-                ge[i].fitness += 0.05 * (rover.nTicks/1000)
+                ge[i].fitness += 0.4 * (rover.nTicks/1000)
 
     return
 
