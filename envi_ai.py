@@ -135,6 +135,17 @@ class Rock(object):
         rect = pygame.Rect(self.x, self.y, self.width, self.height)
         return rect
 
+def isJittering(actions):
+
+    actionsA = actions[::2]
+    actionsB = actions[1::2]
+
+    if (len(set(actionsA)) == 1) and (len(set(actionsB)) == 1) and (actionsA[0] != actionsB[0]):
+        print('JITTER-FUCK')
+        return True
+
+    return False
+
 def lineCollide(x1, y1, x2, y2, x3, y3, x4, y4):
 
     uA = -1
@@ -271,12 +282,17 @@ def gameLoop(genomes, config):
             output = nets[i].activate((rover.x, rover.y, *rover.BOUNDARIES, *rover.DISTANCES, *rover.THETAS, *rock_widths, *rock_heights))
             action = output.index(max(output))
 
-            
+            rover.ACTIONS.append(action)
+            rover.ACTIONS.pop(0)
+
+            jittering = isJittering(rover.ACTIONS)
+            if jittering:
+                ge[i].fitness -= 500
+                rover.isDead = True
+                continue
 
             rover.prev_x = rover.x
             rover.prev_y = rover.y
-
-            print(f'Rover {i:02d}: {action}')
 
             if action == 0 and (rover.y - rover.vel >= 0):
                 rover.nTicks += 1
@@ -298,29 +314,26 @@ def gameLoop(genomes, config):
 
         for i, rover in enumerate(rovers):
 
-            # if rover.getRect().colliderect(rover.getPrevRect()) and rover.nTicks%(135) == 0:
-            #     ge[i].fitness -= 500
-            #     rover.isDead = True
-            #     continue
+            if not rover.isDead:
 
-            collides = False
+                collides = False
 
-            if rover.x <= (ROVER_WIDTH//2)+OFFSET:
-                collides = True
+                if rover.x <= (ROVER_WIDTH//2)+OFFSET:
+                    collides = True
 
-            elif rover.x+(ROVER_WIDTH//2) >= SCREEN_WIDTH-OFFSET:
-                collides = True
+                elif rover.x+(ROVER_WIDTH//2) >= SCREEN_WIDTH-OFFSET:
+                    collides = True
 
-            elif rover.y <= (ROVER_HEIGHT//2)+OFFSET:
-                collides = True
+                elif rover.y <= (ROVER_HEIGHT//2)+OFFSET:
+                    collides = True
 
-            elif rover.y+(ROVER_HEIGHT//2) >= SCREEN_HEIGHT-OFFSET:
-                collides = True
+                elif rover.y+(ROVER_HEIGHT//2) >= SCREEN_HEIGHT-OFFSET:
+                    collides = True
 
-            if collides:
-                ge[i].fitness -= 500
-                rover.isDead = True
-                continue
+                if collides:
+                    ge[i].fitness -= 500
+                    rover.isDead = True
+                    continue
 
             for rock in rover.ROCKS:
 
