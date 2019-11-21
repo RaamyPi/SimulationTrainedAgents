@@ -80,12 +80,11 @@ class Rover(object):
         self.isDead = False
         self.x = x
         self.y = y
-        self.vel = 3
-        self.prev_x = x
-        self.prev_y = y
+        self.vel = 4
+        self.prev_x = None
+        self.prev_y = None
         self.nTicks = 0
-        self.isJittering = False
-        self.nJitter = 0
+        self.color = WHITE
 
         self.BOUNDARIES = [DEFAULT for _ in range(4)]
         self.POINTS = [[DEFAULT, DEFAULT] for _ in range(DIRECTIONS)]
@@ -99,7 +98,13 @@ class Rover(object):
 
         rect = pygame.Rect(self.x, self.y, ROVER_WIDTH, ROVER_HEIGHT)
         rect.center = (self.x, self.y)
-        pygame.draw.rect(WINDOW, WHITE, rect)
+        pygame.draw.rect(WINDOW, self.color, rect)
+
+    def getPrevRect(self):
+
+        rect = pygame.Rect(self.prev_x, self.prev_y, ROVER_WIDTH, ROVER_HEIGHT)
+        rect.center = (self.prev_x, self.prev_y)
+        return rect
 
     def getRect(self):
 
@@ -158,9 +163,6 @@ def drawWindow(rovers, rocks):
 
     for i, rover in enumerate(rovers):
 
-        rover.prev_x = rover.x
-        rover.prev_y = rover.y
-
         rover.drawRover()
 
         # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE POINTS ON THE CIRCLE TO WHICH WE HAVE TO DRAW THE LINE TO
@@ -210,19 +212,6 @@ def drawWindow(rovers, rocks):
 
         # for x, point in enumerate(rover.POINTS):
         #     pygame.draw.line(WINDOW, rover.COLORS[x], (rover.x, rover.y), (point[0], point[1]))
-
-    # ADDRESSING JITTERING
-
-    for i, rover in enumerate(rovers):
-
-        x_displacement = abs(rover.prev_x - rover.x)
-        y_displacement = abs(rover.prev_y - rover.y)
-
-        if (x_displacement <= (2*rover.vel)) and (y_displacement <= (2*rover.vel)) and (rover.nTicks%(3*FPS) == 0):
-            rover.nJitter += 1
-
-        if rover.nJitter > 2:
-            rover.isJittering = True
 
     # MOST IMPORTANT PART
 
@@ -281,6 +270,9 @@ def gameLoop(genomes, config):
             output = nets[i].activate((*rover.BOUNDARIES, *rover.DISTANCES, *rover.THETAS, *rock_widths, *rock_heights))
             action = output.index(max(output))
 
+            rover.prev_x = rover.x
+            rover.prev_y = rover.y
+
             if action == 0 and (rover.y - rover.vel >= 0):
                 rover.nTicks += 1
                 rover.y -= rover.vel
@@ -301,7 +293,7 @@ def gameLoop(genomes, config):
 
         for i, rover in enumerate(rovers):
 
-            if rover.isJittering:
+            if rover.getRect().colliderect(rover.getPrevRect()) and rover.nTicks%(3*FPS) == 0:
                 ge[i].fitness -= 500
                 rover.isDead = True
                 continue
