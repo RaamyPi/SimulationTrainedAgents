@@ -8,13 +8,15 @@ the Rock (if any) will be returned. If there are no Rocks in the line of sight o
 
 Neural Network Architecture:
 
-Input Layer: 64 Nodes
+Input Layer: 68 Nodes
+    4  - Boundaries
     16 - Distances in each Direction
     16 - Thetas
     16 - Widths
     16 - Heights
 
-Hidden Layer: 16 Nodes
+Hidden Layer: 18 Nodes
+    2 - Boundaries
     4 - Distance
     4 - Theta
     4 - Width
@@ -91,7 +93,7 @@ class Rover(object):
         self.DISTANCES = [DEFAULT for _ in range(DIRECTIONS)]
         self.ROCKS = [None for _ in range(DIRECTIONS)]
         self.ROCK_DIMENSIONS = [[0, 0] for _ in range(DIRECTIONS)]
-        self.THETAS = [-1 for _ in range(DIRECTIONS)]
+        self.THETAS = [0 for _ in range(DIRECTIONS)]
 
     def drawRover(self):
 
@@ -198,7 +200,7 @@ def drawWindow(rovers, rocks):
                         rover.ROCKS[x] = rock
                         rover.ROCK_DIMENSIONS[x][0] = rock.width
                         rover.ROCK_DIMENSIONS[x][1] = rock.height
-                        rover.THETAS[x] = math.asin((rover.y-rock.y)/temp_distance) if temp_distance != 0 else -1
+                        rover.THETAS[x] = math.asin((rover.y-rock.y)/temp_distance) if temp_distance != 0 else 0
                         rover.DISTANCES[x] = temp_distance
 
         rover.BOUNDARIES[0] = abs(rover.x - SCREEN_WIDTH)
@@ -206,8 +208,8 @@ def drawWindow(rovers, rocks):
         rover.BOUNDARIES[2] = abs(rover.y - SCREEN_HEIGHT)
         rover.BOUNDARIES[3] = rover.y
 
-        for x, point in enumerate(rover.POINTS):
-            pygame.draw.line(WINDOW, rover.COLORS[x], (rover.x, rover.y), (point[0], point[1]))
+        # for x, point in enumerate(rover.POINTS):
+        #     pygame.draw.line(WINDOW, rover.COLORS[x], (rover.x, rover.y), (point[0], point[1]))
 
     # ADDRESSING JITTERING
 
@@ -219,7 +221,7 @@ def drawWindow(rovers, rocks):
         if (x_displacement <= (2*rover.vel)) and (y_displacement <= (2*rover.vel)) and (rover.nTicks%(3*FPS) == 0):
             rover.nJitter += 1
 
-        if rover.nJitter > 1:
+        if rover.nJitter > 2:
             rover.isJittering = True
 
     # MOST IMPORTANT PART
@@ -300,7 +302,7 @@ def gameLoop(genomes, config):
         for i, rover in enumerate(rovers):
 
             if rover.isJittering:
-                ge[i].fitness -= 300
+                ge[i].fitness -= 500
                 rover.isDead = True
                 continue
 
@@ -321,7 +323,7 @@ def gameLoop(genomes, config):
             for rock in rover.ROCKS:
 
                 if collides:
-                    ge[i].fitness -= 1.4
+                    ge[i].fitness -= 50
                     rover.isDead = True
                     break
 
@@ -349,7 +351,7 @@ def gameLoop(genomes, config):
                 ge.pop(i)
 
             else:
-                ge[i].fitness += (rover.nTicks/1000)
+                ge[i].fitness += 0.05 * (rover.nTicks/1000)
 
     return
 
