@@ -4,9 +4,10 @@ SimulationTrainedAgents
 
 In this simulation, each Rover will be able to 'see' in 64 directions. If there is a Rock in the line of sight, the Distance between the Rock and the
 Rover and the Angle between the line passing through the Rover's y-coordinate and the line joining the Rock and the Rover, the Width and Height of
-the Rock (if any) will be returned. If there are no Rocks in the line of sight of the Rover, they will be returning DEFAULT for all parameters.
+the Rock (if any) will be returned. If there are no Rocks in the line of sight of the Rover, they will be returning DEFAULT for all parameters. It will
+also know the distance to each boundary and finally it's position in the environment.
 
-Neural Network Architecture:
+Neural Network Architecture*:
 
 Input Layer: 262 Nodes
     4  - Boundaries
@@ -16,7 +17,7 @@ Input Layer: 262 Nodes
     64 - Widths
     64 - Heights
 
-Hidden Layer: 18 Nodes
+Hidden Layer: 66 Nodes
     1  - Boundaries
     1  - Rover's Co-ordinates
     16 - Distance
@@ -30,7 +31,7 @@ Output Layer: 4 Nodes
     1 - (E) Right
     1 - (W) Left
 
-The architecture of the Neural Network is subject to change with evolution.
+*The architecture of the Neural Network is subject to change with evolution.
 
 '''
 
@@ -45,7 +46,7 @@ pygame.init()
 
 # NEAT CONSTANTS
 
-NUMBER_OF_GENERATIONS = 20
+NUMBER_OF_GENERATIONS = 100
 
 # DISPLAY_CONSTANTS
 
@@ -71,7 +72,7 @@ FPS = 60
 
 ROVER_WIDTH = 10
 ROVER_HEIGHT = 10
-OFFSET = 10
+OFFSET = 5
 DIRECTIONS = 64
 ROCKS = 50
 
@@ -83,8 +84,6 @@ class Rover(object):
         self.x = x
         self.y = y
         self.vel = 4
-        self.prev_x = None
-        self.prev_y = None
         self.nTicks = 0
 
         self.ACTIONS = [-1 for _ in range(10)]
@@ -121,20 +120,11 @@ class Rock(object):
 
         rect = pygame.Rect(self.x, self.y, self.width, self.height)
         pygame.draw.rect(WINDOW, RED, rect)
-        
+
     def getRect(self):
+
         rect = pygame.Rect(self.x, self.y, self.width, self.height)
         return rect
-
-def isJittering(actions):
-
-    actionsA = actions[::2]
-    actionsB = actions[1::2]
-
-    if (len(set(actionsA)) == 1) and (len(set(actionsB)) == 1) and (actionsA[0] != actionsB[0]):
-        return True
-
-    return False
 
 def lineCollide(x1, y1, x2, y2, x3, y3, x4, y4):
 
@@ -161,56 +151,12 @@ def drawWindow(rovers, rocks):
     WINDOW.fill(BLACK)
 
     for rock in rocks:
+
         rock.drawRock()
 
     for i, rover in enumerate(rovers):
 
         rover.drawRover()
-
-        # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE POINTS ON THE CIRCLE TO WHICH WE HAVE TO DRAW THE LINE TO
-
-        for x in range(DIRECTIONS):
-            deg = x * (360/DIRECTIONS)
-            rad = math.radians(deg)
-            cos = math.cos(rad) * 150
-            sin = math.sin(rad) * 150
-            endX = rover.x + cos
-            endY = rover.y - sin
-            rover.POINTS[x][0] = endX
-            rover.POINTS[x][1] = endY
-            rover.COLORS[x] = WHITE
-
-        # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE DISTANCE AND THETA OF THE ROCK (IF ANY) AND SETS THE COLOR OF THE LINE
-        # AND ALSO UPDATES THE WIDTH AND HEIGHT OF THE ROCK
-
-        for x, point in enumerate(rover.POINTS):
-
-            for rock in rocks:
-
-                l = lineCollide(rover.x, rover.y, point[0], point[1], rock.x, rock.y, rock.x, rock.y+rock.height)
-                r = lineCollide(rover.x, rover.y, point[0], point[1], rock.x+rock.width, rock.y, rock.x+rock.width, rock.y+rock.height)
-                t = lineCollide(rover.x, rover.y, point[0], point[1], rock.x, rock.y, rock.x+rock.width, rock.y)
-                b = lineCollide(rover.x, rover.y, point[0], point[1], rock.x, rock.y+rock.height, rock.x+rock.width, rock.y+rock.height)
-
-                drawn = l or r or t or b
-
-                if drawn:
-
-                    rover.COLORS[x] = BLUE
-                    temp_distance = math.hypot(rock.x - rover.x, rock.y - rover.y)
-
-                    if temp_distance < rover.DISTANCES[x]:
-
-                        rover.ROCKS[x] = rock
-                        rover.ROCK_DIMENSIONS[x][0] = rock.width
-                        rover.ROCK_DIMENSIONS[x][1] = rock.height
-                        rover.THETAS[x] = math.asin((rover.y-rock.y)/temp_distance) if temp_distance != 0 else 0
-                        rover.DISTANCES[x] = temp_distance
-
-        rover.BOUNDARIES[0] = abs(rover.x - SCREEN_WIDTH)
-        rover.BOUNDARIES[1] = rover.x
-        rover.BOUNDARIES[2] = abs(rover.y - SCREEN_HEIGHT)
-        rover.BOUNDARIES[3] = rover.y
 
         # for x, point in enumerate(rover.POINTS):
         #     pygame.draw.line(WINDOW, rover.COLORS[x], (rover.x, rover.y), (point[0], point[1]))
@@ -236,16 +182,20 @@ def gameLoop(genomes, config):
     # POPULATING THE ENVIRONMENT WITH OBJECTS
 
     for _, genome in genomes:
+
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
+
         x = random.randint(0, SCREEN_WIDTH)
         y = random.randint(0, SCREEN_HEIGHT)
         rovers.append(Rover(x, y))
+
         genome.fitness = 0
         ge.append(genome)
 
     rocks = []
     for _ in range(ROCKS):
+
         rock_width = random.randint(5, 15)
         rock_height = random.randint(5, 15)
         rock_x = random.randint(rock_width, SCREEN_WIDTH)
@@ -257,8 +207,6 @@ def gameLoop(genomes, config):
 
         if pygame.display.get_surface() == None:
             return
-
-        drawWindow(rovers, rocks)
 
         CLOCK.tick(FPS)
 
@@ -275,8 +223,11 @@ def gameLoop(genomes, config):
             rover.ACTIONS.append(action)
             rover.ACTIONS.pop(0)
 
-            jittering = isJittering(rover.ACTIONS)
-            if jittering:
+            actionsA = rover.ACTIONS[::2]
+            actionsB = rover.ACTIONS[1::2]
+
+            isJittering = (len(set(actionsA)) == 1) and (len(set(actionsB)) == 1) and (actionsA[0] != actionsB[0])
+            if isJittering:
                 ge[i].fitness -= 500
                 rover.isDead = True
                 continue
@@ -284,21 +235,72 @@ def gameLoop(genomes, config):
             rover.prev_x = rover.x
             rover.prev_y = rover.y
 
-            if action == 0 and (rover.y - rover.vel >= 0):
-                rover.nTicks += 1
+            if action == 0:
                 rover.y -= rover.vel
 
-            elif action == 1 and (rover.y + rover.vel <= SCREEN_HEIGHT - ROVER_HEIGHT):
-                rover.nTicks += 1
+            elif action == 1:
                 rover.y += rover.vel
 
-            elif action == 2 and (rover.x - rover.vel >= 0):
-                rover.nTicks += 1
+            elif action == 2:
                 rover.x -= rover.vel
 
-            elif action == 3 and (rover.x + rover.vel <= SCREEN_WIDTH - ROVER_WIDTH):
-                rover.nTicks += 1
+            elif action == 3:
                 rover.x += rover.vel
+
+            rover.nTicks += 1
+
+        for i, rover in enumerate(rovers):
+
+            # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE POINTS ON THE CIRCLE TO WHICH WE HAVE TO DRAW THE LINE TO
+
+            for x in range(DIRECTIONS):
+
+                deg = x * (360/DIRECTIONS)
+                rad = math.radians(deg)
+
+                cos = math.cos(rad) * 200
+                sin = math.sin(rad) * 200
+
+                endX = rover.x + cos
+                endY = rover.y - sin
+
+                rover.POINTS[x][0] = endX
+                rover.POINTS[x][1] = endY
+                rover.COLORS[x] = WHITE
+
+            # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE DISTANCE AND THETA OF THE ROCK (IF ANY) AND SETS THE COLOR OF THE LINE
+            # AND ALSO UPDATES THE WIDTH AND HEIGHT OF THE ROCK
+
+            for x, point in enumerate(rover.POINTS):
+
+                for rock in rocks:
+
+                    l = lineCollide(rover.x, rover.y, point[0], point[1], rock.x, rock.y, rock.x, rock.y+rock.height)
+                    r = lineCollide(rover.x, rover.y, point[0], point[1], rock.x+rock.width, rock.y, rock.x+rock.width, rock.y+rock.height)
+                    t = lineCollide(rover.x, rover.y, point[0], point[1], rock.x, rock.y, rock.x+rock.width, rock.y)
+                    b = lineCollide(rover.x, rover.y, point[0], point[1], rock.x, rock.y+rock.height, rock.x+rock.width, rock.y+rock.height)
+
+                    drawn = l or r or t or b
+
+                    if drawn:
+
+                        rover.COLORS[x] = BLUE
+                        temp_distance = math.hypot(rock.x - rover.x, rock.y - rover.y)
+
+                        if temp_distance < rover.DISTANCES[x]:
+
+                            rover.ROCKS[x] = rock
+                            rover.ROCK_DIMENSIONS[x][0] = rock.width
+                            rover.ROCK_DIMENSIONS[x][1] = rock.height
+                            rover.THETAS[x] = math.asin((rover.y-rock.y)/temp_distance) if temp_distance != 0 else 0
+                            rover.DISTANCES[x] = temp_distance
+
+            rover.BOUNDARIES[0] = abs(rover.x - SCREEN_WIDTH)
+            rover.BOUNDARIES[1] = rover.x
+            rover.BOUNDARIES[2] = abs(rover.y - SCREEN_HEIGHT)
+            rover.BOUNDARIES[3] = rover.y
+
+        drawWindow(rovers, rocks)
 
         # COLLISION DETECTION
 
