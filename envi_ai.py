@@ -46,7 +46,7 @@ pygame.init()
 
 # NEAT CONSTANTS
 
-NUMBER_OF_GENERATIONS = 100
+NUMBER_OF_GENERATIONS = 500
 
 # DISPLAY_CONSTANTS
 
@@ -350,7 +350,7 @@ def gameLoop(genomes, config):
                 ge.pop(i)
 
             else:
-                ge[i].fitness += 0.4 * (rover.nTicks/1000)
+                ge[i].fitness += 0.04 * (rover.nTicks/1000)
 
     return
 
