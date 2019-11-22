@@ -2,25 +2,27 @@
 
 SimulationTrainedAgents
 
-In this simulation, each Rover will be able to 'see' in 16 directions. If there is a Rock in the line of sight, the Distance between the Rock and the
+In this simulation, each Rover will be able to 'see' in 64 directions. If there is a Rock in the line of sight, the Distance between the Rock and the
 Rover and the Angle between the line passing through the Rover's y-coordinate and the line joining the Rock and the Rover, the Width and Height of
 the Rock (if any) will be returned. If there are no Rocks in the line of sight of the Rover, they will be returning DEFAULT for all parameters.
 
 Neural Network Architecture:
 
-Input Layer: 68 Nodes
+Input Layer: 262 Nodes
     4  - Boundaries
-    16 - Distances in each Direction
-    16 - Thetas
-    16 - Widths
-    16 - Heights
+    2  - Rover's Co-ordinates
+    64 - Distances in each Direction
+    64 - Thetas
+    64 - Widths
+    64 - Heights
 
 Hidden Layer: 18 Nodes
-    2 - Boundaries
-    4 - Distance
-    4 - Theta
-    4 - Width
-    4 - Height
+    1  - Boundaries
+    1  - Rover's Co-ordinates
+    16 - Distance
+    16 - Theta
+    16 - Width
+    16 - Height
 
 Output Layer: 4 Nodes
     1 - (N) Up
@@ -43,7 +45,7 @@ pygame.init()
 
 # NEAT CONSTANTS
 
-NUMBER_OF_GENERATIONS = 10
+NUMBER_OF_GENERATIONS = 20
 
 # DISPLAY_CONSTANTS
 
@@ -84,7 +86,6 @@ class Rover(object):
         self.prev_x = None
         self.prev_y = None
         self.nTicks = 0
-        self.color = WHITE
 
         self.ACTIONS = [-1 for _ in range(10)]
         self.BOUNDARIES = [DEFAULT for _ in range(4)]
@@ -99,13 +100,7 @@ class Rover(object):
 
         rect = pygame.Rect(self.x, self.y, ROVER_WIDTH, ROVER_HEIGHT)
         rect.center = (self.x, self.y)
-        pygame.draw.rect(WINDOW, self.color, rect)
-
-    def getPrevRect(self):
-
-        rect = pygame.Rect(self.prev_x, self.prev_y, ROVER_WIDTH, ROVER_HEIGHT)
-        rect.center = (self.prev_x, self.prev_y)
-        return rect
+        pygame.draw.rect(WINDOW, WHITE, rect)
 
     def getRect(self):
 
@@ -121,16 +116,12 @@ class Rock(object):
         self.y = y
         self.width = width
         self.height = height
-        self.fillColor = RED
-        self.outlineColor = BLACK
 
     def drawRock(self):
 
-        border = 0.5
         rect = pygame.Rect(self.x, self.y, self.width, self.height)
-        WINDOW.fill(self.outlineColor, rect)
-        WINDOW.fill(self.fillColor, rect.inflate(-border*2, -border*2))
-
+        pygame.draw.rect(WINDOW, RED, rect)
+        
     def getRect(self):
         rect = pygame.Rect(self.x, self.y, self.width, self.height)
         return rect
@@ -141,7 +132,6 @@ def isJittering(actions):
     actionsB = actions[1::2]
 
     if (len(set(actionsA)) == 1) and (len(set(actionsB)) == 1) and (actionsA[0] != actionsB[0]):
-        print('JITTER-FUCK')
         return True
 
     return False
@@ -377,7 +367,6 @@ def run(configPath):
     visualize.draw_net(config, winner, view=True)
     visualize.plot_stats(statisticsReporter, ylog=False, view=True)
     visualize.plot_species(statisticsReporter, view=True)
-
 
 if __name__ == '__main__':
 	localDir = os.path.dirname(__file__)
