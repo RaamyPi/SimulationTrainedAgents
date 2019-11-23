@@ -46,7 +46,7 @@ pygame.init()
 
 # NEAT CONSTANTS
 
-NUMBER_OF_GENERATIONS = 500
+NUMBER_OF_GENERATIONS = 10
 
 # DISPLAY_CONSTANTS
 
@@ -72,9 +72,10 @@ FPS = 60
 
 ROVER_WIDTH = 10
 ROVER_HEIGHT = 10
+ROVER_VIEW = 100
 OFFSET = 5
-DIRECTIONS = 64
-ROCKS = 50
+DIRECTIONS = 128
+ROCKS = 100
 
 class Rover(object):
 
@@ -83,20 +84,22 @@ class Rover(object):
         self.isDead = False
         self.x = x
         self.y = y
-        self.vel = 4
+        self.vel = 3
         self.nTicks = 0
 
         self.ACTIONS = [-1 for _ in range(10)]
         self.BOUNDARIES = [DEFAULT for _ in range(4)]
         self.POINTS = [[DEFAULT, DEFAULT] for _ in range(DIRECTIONS)]
-        self.COLORS = [WHITE for _ in range(DIRECTIONS)]
+        self.COLORS = [None for _ in range(DIRECTIONS)]
         self.DISTANCES = [DEFAULT for _ in range(DIRECTIONS)]
         self.ROCKS = [None for _ in range(DIRECTIONS)]
         self.ROCK_DIMENSIONS = [[0, 0] for _ in range(DIRECTIONS)]
         self.THETAS = [0 for _ in range(DIRECTIONS)]
+        self.VISITED = set()
 
     def drawRover(self):
 
+        self.nTicks += 1
         rect = pygame.Rect(self.x, self.y, ROVER_WIDTH, ROVER_HEIGHT)
         rect.center = (self.x, self.y)
         pygame.draw.rect(WINDOW, WHITE, rect)
@@ -150,18 +153,18 @@ def drawWindow(rovers, rocks):
 
     WINDOW.fill(BLACK)
 
-    for rock in rocks:
-
-        rock.drawRock()
-
     for i, rover in enumerate(rovers):
+
+        for x, point in enumerate(rover.POINTS):
+            if rover.COLORS[x] is not None:
+                pygame.draw.line(WINDOW, rover.COLORS[x], (rover.x, rover.y), (point[0], point[1]))
 
         rover.drawRover()
 
-        # for x, point in enumerate(rover.POINTS):
-        #     pygame.draw.line(WINDOW, rover.COLORS[x], (rover.x, rover.y), (point[0], point[1]))
 
-    # MOST IMPORTANT PART
+    for rock in rocks:
+
+        rock.drawRock()
 
     pygame.display.flip()
 
@@ -232,9 +235,6 @@ def gameLoop(genomes, config):
                 rover.isDead = True
                 continue
 
-            rover.prev_x = rover.x
-            rover.prev_y = rover.y
-
             if action == 0:
                 rover.y -= rover.vel
 
@@ -247,7 +247,10 @@ def gameLoop(genomes, config):
             elif action == 3:
                 rover.x += rover.vel
 
-            rover.nTicks += 1
+            position = (rover.x, rover.y)
+            if not position in rover.VISITED:
+                rover.VISITED.add(position)
+                ge[i].fitness += 2.5
 
         for i, rover in enumerate(rovers):
 
@@ -258,15 +261,15 @@ def gameLoop(genomes, config):
                 deg = x * (360/DIRECTIONS)
                 rad = math.radians(deg)
 
-                cos = math.cos(rad) * 200
-                sin = math.sin(rad) * 200
+                cos = math.cos(rad) * ROVER_VIEW
+                sin = math.sin(rad) * ROVER_VIEW
 
                 endX = rover.x + cos
                 endY = rover.y - sin
 
                 rover.POINTS[x][0] = endX
                 rover.POINTS[x][1] = endY
-                rover.COLORS[x] = WHITE
+                rover.COLORS[x] = None
 
             # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE DISTANCE AND THETA OF THE ROCK (IF ANY) AND SETS THE COLOR OF THE LINE
             # AND ALSO UPDATES THE WIDTH AND HEIGHT OF THE ROCK
@@ -332,11 +335,11 @@ def gameLoop(genomes, config):
                 if rock is not None:
 
                     if rover.getRect().colliderect(rock.getRect()):
-                        ge[i].fitness -= 0.7
+                        ge[i].fitness -= 2.0
                         rover.isDead = True
 
                     else:
-                        ge[i].fitness += 1.8
+                        ge[i].fitness += 1.5
 
             rover.ROCKS = [None for _ in range(DIRECTIONS)]
 
@@ -350,7 +353,7 @@ def gameLoop(genomes, config):
                 ge.pop(i)
 
             else:
-                ge[i].fitness += 0.04 * (rover.nTicks/1000)
+                ge[i].fitness += 0.04 * (rover.nTicks/10000)
 
     return
 
@@ -366,7 +369,7 @@ def run(configPath):
 
     winner = population.run(gameLoop, NUMBER_OF_GENERATIONS)
 
-    visualize.draw_net(config, winner, view=True)
+    #visualize.draw_net(config, winner, view=True)
     visualize.plot_stats(statisticsReporter, ylog=False, view=True)
     visualize.plot_species(statisticsReporter, view=True)
 
