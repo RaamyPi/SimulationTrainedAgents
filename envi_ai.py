@@ -66,7 +66,7 @@ DEFAULT = math.hypot(SCREEN_WIDTH, SCREEN_HEIGHT)
 # GAME_CONSTANTS
 
 CLOCK = pygame.time.Clock()
-FPS = 60
+FPS = 30
 
 # OBJECTS_CONSTANTS
 
@@ -74,7 +74,7 @@ ROVER_WIDTH = 10
 ROVER_HEIGHT = 10
 ROVER_VIEW = 100
 OFFSET = 5
-DIRECTIONS = 128
+DIRECTIONS = 256
 ROCKS = 100
 
 class Rover(object):
@@ -156,11 +156,11 @@ def drawWindow(rovers, rocks):
     for i, rover in enumerate(rovers):
 
         for x, point in enumerate(rover.POINTS):
+
             if rover.COLORS[x] is not None:
                 pygame.draw.line(WINDOW, rover.COLORS[x], (rover.x, rover.y), (point[0], point[1]))
 
         rover.drawRover()
-
 
     for rock in rocks:
 
@@ -199,8 +199,8 @@ def gameLoop(genomes, config):
     rocks = []
     for _ in range(ROCKS):
 
-        rock_width = random.randint(5, 15)
-        rock_height = random.randint(5, 15)
+        rock_width = random.randint(1, 15)
+        rock_height = random.randint(1, 15)
         rock_x = random.randint(rock_width, SCREEN_WIDTH)
         rock_y = random.randint(rock_height, SCREEN_HEIGHT)
         rock = Rock(rock_x, rock_y, rock_width, rock_height)
@@ -251,6 +251,8 @@ def gameLoop(genomes, config):
             if not position in rover.VISITED:
                 rover.VISITED.add(position)
                 ge[i].fitness += 2.5
+            else:
+                ge[i].fitness -= 1.5
 
         for i, rover in enumerate(rovers):
 
@@ -339,7 +341,7 @@ def gameLoop(genomes, config):
                         rover.isDead = True
 
                     else:
-                        ge[i].fitness += 1.5
+                        ge[i].fitness += 0.5
 
             rover.ROCKS = [None for _ in range(DIRECTIONS)]
 
