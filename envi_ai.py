@@ -9,21 +9,21 @@ also know the distance to each boundary and finally it's position in the environ
 
 Neural Network Architecture*:
 
-Input Layer: 262 Nodes
+Input Layer: 1030 Nodes
     4  - Boundaries
     2  - Rover's Co-ordinates
-    64 - Distances in each Direction
-    64 - Thetas
-    64 - Widths
-    64 - Heights
+    256 - Distances in each Direction
+    256 - Thetas
+    256 - Widths
+    256 - Heights
 
-Hidden Layer: 66 Nodes
+Hidden Layer: 258 Nodes
     1  - Boundaries
     1  - Rover's Co-ordinates
-    16 - Distance
-    16 - Theta
-    16 - Width
-    16 - Height
+    64 - Distance
+    64 - Theta
+    64 - Width
+    64 - Height
 
 Output Layer: 4 Nodes
     1 - (N) Up
