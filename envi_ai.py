@@ -88,7 +88,7 @@ class Rover(object):
         self.nTicks = 0
 
         self.ACTIONS = [-1 for _ in range(10)]
-        self.BOUNDARIES = [DEFAULT for _ in range(4)]
+        self.BOUNDARIES = [abs(self.x - SCREEN_WIDTH), self.x, abs(self.y - SCREEN_HEIGHT), self.y]
         self.POINTS = [[DEFAULT, DEFAULT] for _ in range(DIRECTIONS)]
         self.COLORS = [None for _ in range(DIRECTIONS)]
         self.DISTANCES = [DEFAULT for _ in range(DIRECTIONS)]
@@ -213,47 +213,6 @@ def gameLoop(genomes, config):
 
         CLOCK.tick(FPS)
 
-        # NEURAL NETWORK IN ACTION
-
-        for i, rover in enumerate(rovers):
-
-            rock_widths = [dimension[0] for dimension in rover.ROCK_DIMENSIONS]
-            rock_heights = [dimension[1] for dimension in rover.ROCK_DIMENSIONS]
-
-            output = nets[i].activate((rover.x, rover.y, *rover.BOUNDARIES, *rover.DISTANCES, *rover.THETAS, *rock_widths, *rock_heights))
-            action = output.index(max(output))
-
-            rover.ACTIONS.append(action)
-            rover.ACTIONS.pop(0)
-
-            actionsA = rover.ACTIONS[::2]
-            actionsB = rover.ACTIONS[1::2]
-
-            isJittering = (len(set(actionsA)) == 1) and (len(set(actionsB)) == 1) and (actionsA[0] != actionsB[0])
-            if isJittering:
-                ge[i].fitness -= 500
-                rover.isDead = True
-                continue
-
-            if action == 0:
-                rover.y -= rover.vel
-
-            elif action == 1:
-                rover.y += rover.vel
-
-            elif action == 2:
-                rover.x -= rover.vel
-
-            elif action == 3:
-                rover.x += rover.vel
-
-            position = (rover.x, rover.y)
-            if not position in rover.VISITED:
-                rover.VISITED.add(position)
-                ge[i].fitness += 2.5
-            else:
-                ge[i].fitness -= 1.5
-
         for i, rover in enumerate(rovers):
 
             # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE POINTS ON THE CIRCLE TO WHICH WE HAVE TO DRAW THE LINE TO
@@ -304,6 +263,45 @@ def gameLoop(genomes, config):
             rover.BOUNDARIES[1] = rover.x
             rover.BOUNDARIES[2] = abs(rover.y - SCREEN_HEIGHT)
             rover.BOUNDARIES[3] = rover.y
+
+        # NEURAL NETWORK IN ACTION
+
+        for i, rover in enumerate(rovers):
+
+            rock_widths = [dimension[0] for dimension in rover.ROCK_DIMENSIONS]
+            rock_heights = [dimension[1] for dimension in rover.ROCK_DIMENSIONS]
+
+            output = nets[i].activate((rover.x, rover.y, *rover.BOUNDARIES, *rover.DISTANCES, *rover.THETAS, *rock_widths, *rock_heights))
+            action = output.index(max(output))
+
+            rover.ACTIONS.append(action)
+            rover.ACTIONS.pop(0)
+
+            actionsA = rover.ACTIONS[::2]
+            actionsB = rover.ACTIONS[1::2]
+
+            isJittering = (len(set(actionsA)) == 1) and (len(set(actionsB)) == 1) and (actionsA[0] != actionsB[0])
+            if isJittering:
+                ge[i].fitness -= 500
+                rover.isDead = True
+                continue
+
+            if action == 0:
+                rover.y -= rover.vel
+
+            elif action == 1:
+                rover.y += rover.vel
+
+            elif action == 2:
+                rover.x -= rover.vel
+
+            elif action == 3:
+                rover.x += rover.vel
+
+            position = (rover.x, rover.y)
+            if not position in rover.VISITED:
+                rover.VISITED.add(position)
+                ge[i].fitness += 2.5
 
         drawWindow(rovers, rocks)
 
@@ -367,7 +365,7 @@ def run(configPath):
     population.add_reporter(neat.StdOutReporter(True))
     statisticsReporter = neat.StatisticsReporter()
     population.add_reporter(statisticsReporter)
-    population.add_reporter(neat.Checkpointer(100))
+    #population.add_reporter(neat.Checkpointer(100))
 
     winner = population.run(gameLoop, NUMBER_OF_GENERATIONS)
 
@@ -376,6 +374,7 @@ def run(configPath):
     visualize.plot_species(statisticsReporter, view=True)
 
 if __name__ == '__main__':
+
 	localDir = os.path.dirname(__file__)
 	configPath = os.path.join(localDir, 'config.txt')
 	run(configPath)
