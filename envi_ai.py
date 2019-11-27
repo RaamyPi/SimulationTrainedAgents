@@ -17,14 +17,6 @@ Input Layer: 1030 Nodes
     256 - Widths
     256 - Heights
 
-Hidden Layer: 258 Nodes
-    1  - Boundaries
-    1  - Rover's Co-ordinates
-    64 - Distance
-    64 - Theta
-    64 - Width
-    64 - Height
-
 Output Layer: 4 Nodes
     1 - (N) Up
     1 - (S) Down
@@ -46,7 +38,7 @@ pygame.init()
 
 # NEAT CONSTANTS
 
-NUMBER_OF_GENERATIONS = 10
+NUMBER_OF_GENERATIONS = 500
 
 # DISPLAY_CONSTANTS
 
@@ -365,11 +357,11 @@ def run(configPath):
     population.add_reporter(neat.StdOutReporter(True))
     statisticsReporter = neat.StatisticsReporter()
     population.add_reporter(statisticsReporter)
-    #population.add_reporter(neat.Checkpointer(100))
+    population.add_reporter(neat.Checkpointer(50))
 
     winner = population.run(gameLoop, NUMBER_OF_GENERATIONS)
 
-    #visualize.draw_net(config, winner, view=True)
+    visualize.draw_net(config, winner, view=True)
     visualize.plot_stats(statisticsReporter, ylog=False, view=True)
     visualize.plot_species(statisticsReporter, view=True)
 
