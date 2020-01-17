@@ -188,8 +188,8 @@ def gameLoop(genomes, config):
                 deg = x * (360/DIRECTIONS)
                 rad = math.radians(deg)
 
-                cos = math.cos(rad) * ROVER_VIEW
-                sin = math.sin(rad) * ROVER_VIEW
+                cos = math.cos(rad) * ROVER_FOV
+                sin = math.sin(rad) * ROVER_FOV
 
                 endX = rover.x + cos
                 endY = rover.y - sin
