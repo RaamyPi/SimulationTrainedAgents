@@ -133,7 +133,7 @@ def drawWindow(rovers, rocks):
 
     pygame.display.flip()
 
-# Main Loop
+# MAIN LOOP
 
 def gameLoop(genomes, config):
 
@@ -334,6 +334,10 @@ def run(configPath):
     population.add_reporter(neat.Checkpointer(50))
 
     winner = population.run(gameLoop, NUMBER_OF_GENERATIONS)
+
+    # THIS IS ONLY FOR VISUALIZATION PURPOSES
+    # COMMENT THE FOLLOWING THREE LINES IF YOU WANT
+    # IT WILL NOT AFFECT THE SIMULATION IN ANY WAY
 
     visualize.draw_net(config, winner, view=False)
     visualize.plot_stats(statisticsReporter, ylog=False, view=True)
