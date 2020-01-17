@@ -29,11 +29,10 @@ Output Layer: 4 Nodes
 
 import pygame
 import neat
-import visualize
+#import visualize
 import math
 import random
 import os
-
 pygame.init()
 
 # NEAT CONSTANTS

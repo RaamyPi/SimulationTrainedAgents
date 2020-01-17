@@ -1,32 +1,3 @@
-'''
-
-SimulationTrainedAgents
-
-In this simulation, each Rover will be able to 'see' in 64 directions. If there is a Rock in the line of sight, the Distance between the Rock and the
-Rover and the Angle between the line passing through the Rover's y-coordinate and the line joining the Rock and the Rover, the Width and Height of
-the Rock (if any) will be returned. If there are no Rocks in the line of sight of the Rover, they will be returning DEFAULT for all parameters. It will
-also know the distance to each boundary and finally it's position in the environment.
-
-Neural Network Architecture*:
-
-Input Layer: 1030 Nodes
-    4  - Boundaries
-    2  - Rover's Co-ordinates
-    256 - Distances in each Direction
-    256 - Thetas
-    256 - Widths
-    256 - Heights
-
-Output Layer: 4 Nodes
-    1 - (N) Up
-    1 - (S) Down
-    1 - (E) Right
-    1 - (W) Left
-
-*The architecture of the Neural Network is subject to change with evolution.
-
-'''
-
 import pygame
 import neat
 import visualize
@@ -64,9 +35,9 @@ FPS = 30
 
 ROVER_WIDTH = 10
 ROVER_HEIGHT = 10
-ROVER_VIEW = 100
+ROVER_FOV = 100
 OFFSET = 5
-DIRECTIONS = 256
+DIRECTIONS = 360
 ROCKS = 100
 
 class Rover(object):
@@ -94,6 +65,13 @@ class Rover(object):
         self.nTicks += 1
         rect = pygame.Rect(self.x, self.y, ROVER_WIDTH, ROVER_HEIGHT)
         rect.center = (self.x, self.y)
+
+        for x, point in enumerate(self.POINTS):
+
+            if self.COLORS[x] is not None:
+
+                pygame.draw.line(WINDOW, self.COLORS[x], (self.x, self.y), (point[0], point[1]))
+
         pygame.draw.rect(WINDOW, WHITE, rect)
 
     def getRect(self):
@@ -145,12 +123,7 @@ def drawWindow(rovers, rocks):
 
     WINDOW.fill(BLACK)
 
-    for i, rover in enumerate(rovers):
-
-        for x, point in enumerate(rover.POINTS):
-
-            if rover.COLORS[x] is not None:
-                pygame.draw.line(WINDOW, rover.COLORS[x], (rover.x, rover.y), (point[0], point[1]))
+    for rover in rovers:
 
         rover.drawRover()
 
@@ -208,6 +181,7 @@ def gameLoop(genomes, config):
         for i, rover in enumerate(rovers):
 
             # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE POINTS ON THE CIRCLE TO WHICH WE HAVE TO DRAW THE LINE TO
+            # THIS IS JUST A VISUAL CUE FOR US
 
             for x in range(DIRECTIONS):
 
@@ -225,7 +199,7 @@ def gameLoop(genomes, config):
                 rover.COLORS[x] = None
 
             # FOR EVERY ROVER IN ROVERS, THIS CALCULATES THE DISTANCE AND THETA OF THE ROCK (IF ANY) AND SETS THE COLOR OF THE LINE
-            # AND ALSO UPDATES THE WIDTH AND HEIGHT OF THE ROCK
+            # AND ALSO UPDATES THE WIDTH AND HEIGHT OF THE NEAREST ROVER
 
             for x, point in enumerate(rover.POINTS):
 
@@ -331,7 +305,7 @@ def gameLoop(genomes, config):
                         rover.isDead = True
 
                     else:
-                        ge[i].fitness += 0.5
+                        ge[i].fitness += 0.75
 
             rover.ROCKS = [None for _ in range(DIRECTIONS)]
 
@@ -345,7 +319,7 @@ def gameLoop(genomes, config):
                 ge.pop(i)
 
             else:
-                ge[i].fitness += 0.04 * (rover.nTicks/10000)
+                ge[i].fitness += rover.nTicks * 10**-10
 
     return
 
@@ -357,11 +331,11 @@ def run(configPath):
     population.add_reporter(neat.StdOutReporter(True))
     statisticsReporter = neat.StatisticsReporter()
     population.add_reporter(statisticsReporter)
-    #population.add_reporter(neat.Checkpointer(50))
+    population.add_reporter(neat.Checkpointer(50))
 
     winner = population.run(gameLoop, NUMBER_OF_GENERATIONS)
 
-    #visualize.draw_net(config, winner, view=True)
+    visualize.draw_net(config, winner, view=False)
     visualize.plot_stats(statisticsReporter, ylog=False, view=True)
     visualize.plot_species(statisticsReporter, view=True)
 
