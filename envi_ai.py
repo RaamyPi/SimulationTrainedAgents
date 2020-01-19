@@ -88,6 +88,7 @@ class Rock(object):
         self.y = y
         self.width = width
         self.height = height
+        self.vel = 3
 
     def drawRock(self):
 
@@ -129,7 +130,34 @@ def drawWindow(rovers, rocks):
 
     for rock in rocks:
 
+        # # MAKING THE ROCKS DYNAMIC BY DISPLACING THEM RANDOMLY
+        # # A CHOICE OF 0 CORRESPONDS TO DOWN (LEFT) AND A CHOICE OF 1 CORRESPONDS TO UP (RIGHT)
+        # 
+        # x_choice = random.randint(0, 1)
+        # y_choice = random.randint(0, 1)
+        #
+        # if x_choice == 0:
+        #
+        #     if (rock.x - rock.vel) > rock.width:
+        #         rock.x -= rock.vel
+        #
+        # else:
+        #
+        #     if (rock.x + rock.vel) < (SCREEN_WIDTH - rock.width):
+        #         rock.x += rock.vel
+        #
+        # if y_choice == 1:
+        #
+        #     if (rock.y - rock.vel) > rock.height:
+        #         rock.y -= rock.vel
+        #
+        # else:
+        #
+        #     if (rock.y + rock.vel) < (SCREEN_HEIGHT - rock.height):
+        #         rock.y += rock.vel
+
         rock.drawRock()
+
 
     pygame.display.flip()
 
