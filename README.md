@@ -8,6 +8,8 @@ Required dependencies:
 
 `visualize.py` is completely optional. It requires some additional dependencies. Feel free to exclude that import. If you decide not to import that module, make sure to comment line numbers #342, #343, #344. 
 
+*If you want the rocks to be dynamic, make sure to uncomment lines #133 through #158. They are commented by default.
+
 -----------------------------------------------------------------------------------------------------------------------------
 
 SimulationTrainedAgents
