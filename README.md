@@ -21,7 +21,8 @@ also know the distance to each boundary and finally it's position in the environ
 
 Neural Network Architecture*:
 
-Input Layer: 1446 Nodes
+Input Layer: (1446 Nodes)
+
     360 - Distances in each Direction
     360 - Heights
     360 - Widths
@@ -29,7 +30,8 @@ Input Layer: 1446 Nodes
     4   - Boundaries
     2   - Rover's Co-ordinates
 
-Output Layer: 4 Nodes
+Output Layer: (4 Nodes)
+
     1 - (N) Up
     1 - (S) Down
     1 - (E) Right
